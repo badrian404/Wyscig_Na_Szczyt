@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wyścig na szczyt</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --panel3: #0f172a;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent2: #60a5fa;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --border: #334155;
+      --g1: #38bdf8;
+      --g2: #f472b6;
+      --gold: #facc15;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #08101d, #111827);
+      color: var(--text);
+    }
+    .wrap { max-width: 1560px; margin: 0 auto; padding: 16px; }
+    h1,h2,h3 { margin: 0 0 10px; }
+    .topbar, .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .grid { display:grid; grid-template-columns: 1.45fr 0.95fr; gap:16px; }
+    .panel {
+      background: rgba(17,24,39,.96);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .badge {
+      display:inline-block; padding:6px 10px; border-radius:999px;
+      border:1px solid var(--border); background:#09111f; color:var(--muted); font-size:12px;
+    }
+    button, select {
+      background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 14px;
+    }
+    button:hover:not(:disabled), select:hover:not(:disabled) { border-color: var(--accent2); }
+    button:disabled, select:disabled { opacity: .5; cursor:not-allowed; }
+    button.primary { background:#14532d; border-color:#166534; }
+    button.warn { background:#78350f; border-color:#92400e; }
+    button.danger { background:#7f1d1d; border-color:#991b1b; }
+    .status-line, .hint-box {
+      padding: 10px; background:#08101d; border:1px solid var(--border); border-radius: 10px;
+      font-family: Consolas, Monaco, monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap;
+    }
+    .hint-box { border-color:#36506e; background:#0a1526; }
+    .score { display:grid; grid-template-columns: repeat(2,1fr); gap:10px; }
+    .panel-mini { background:#09111f; border:1px solid var(--border); border-radius:12px; padding:10px; }
+    .big { font-size:28px; font-weight:bold; color:var(--accent); }
+    .subtle { color:var(--muted); font-size:12px; }
+    .triples { display:grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap:8px; margin-top:8px; }
+    .triple-btn {
+      text-align:center; padding:10px; border-radius:10px; border:1px solid var(--border);
+      background:#09111f; cursor:pointer; font-weight:bold;
+    }
+    .triple-btn.selected { border-color:var(--accent); outline:2px solid rgba(34,197,94,.25); background:#052e16; }
+    .triple-btn.disabled { opacity:.42; cursor:not-allowed; }
+    .log {
+      height: 650px; overflow:auto; background:#020617; border:1px solid var(--border); border-radius:12px;
+      padding:10px; font-family:Consolas, Monaco, monospace; font-size:13px; line-height:1.45; white-space:pre-wrap;
+    }
+    .game-setup { display:grid; grid-template-columns: repeat(2, minmax(180px,1fr)); gap:10px; margin-bottom:10px; }
+    .setup-grid { display:grid; grid-template-columns: repeat(2, minmax(180px,1fr)); gap:10px; margin-bottom:10px; }
+    .boards { display:grid; gap:8px; }
+    .route-board {
+      display:grid; grid-template-columns: 80px 56px 1fr 56px; gap:8px; align-items:center;
+      background:#08101d; border:1px solid var(--border); border-radius:12px; padding:8px;
+    }
+    .route-label { font-weight:bold; color:#cbd5e1; }
+    .endpoint {
+      min-height:38px; border:1px dashed var(--border); border-radius:10px; display:flex; align-items:center; justify-content:center;
+      background:#0a1526; color:var(--muted); font-size:12px; text-align:center; padding:4px;
+    }
+    .track {
+      display:grid; gap:4px; align-items:center;
+    }
+    .cell {
+      min-height:42px; border:1px solid var(--border); border-radius:10px; background:#0d182a; padding:2px;
+      display:flex; flex-direction:column; justify-content:space-between; position:relative;
+    }
+    .cell.mid { box-shadow: inset 0 0 0 1px rgba(250,204,21,.45); }
+    .cell.start-cell { background:#10243b; }
+    .cell.meta-cell { background:#1d3a16; }
+    .cell-index { font-size:10px; color:var(--muted); align-self:flex-end; }
+    .pawn-stack { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+    .pawn {
+      width:20px; height:20px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center;
+      font-size:10px; font-weight:bold; color:#06111f; border:1px solid rgba(255,255,255,.2);
+    }
+    .pawn.g1 { background:var(--g1); }
+    .pawn.g2 { background:var(--g2); }
+    .base-row { display:grid; grid-template-columns: repeat(2,1fr); gap:10px; margin-top:10px; }
+    .base-box { background:#08101d; border:1px solid var(--border); border-radius:12px; padding:10px; }
+    .base-pawns { display:flex; gap:6px; flex-wrap:wrap; min-height:24px; }
+    .section-title { margin:10px 0 6px; color:#cbd5e1; }
+    .footer-note { color:var(--muted); font-size:12px; margin-top:8px; }
+    @media (max-width: 1080px) {
+      .grid { grid-template-columns: 1fr; }
+      .log { height: 360px; }
+      .route-board { grid-template-columns: 72px 48px 1fr 48px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Wyścig na szczyt</h1>
+    <div class="topbar" style="margin-bottom:12px;">
+      <span class="badge" id="turnBadge">Tura: 0</span>
+      <span class="badge" id="phaseBadge">Faza: start</span>
+      <span class="badge" id="activeBadge">Aktywny: —</span>
+      <span class="badge" id="lastTurnBadge">Ostatnia tura: nie</span>
+      <span class="badge" id="modeBadge">Tryb: —</span>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <h2>Stan gry</h2>
+          <div class="score" style="margin-bottom:10px;">
+            <div class="panel-mini">
+              <div>Gracz1 — NaSzczycie</div>
+              <div class="big" id="score1">0</div>
+            </div>
+            <div class="panel-mini">
+              <div>Gracz2 — NaSzczycie</div>
+              <div class="big" id="score2">0</div>
+            </div>
+          </div>
+
+          <div class="section-title">Status pionków</div>
+          <div class="status-line" id="statusLine"></div>
+
+          <div class="section-title">Plansza tras</div>
+          <div class="boards" id="boardContainer"></div>
+
+          <div class="base-row">
+            <div class="base-box">
+              <div><strong>BAZA Gracza1</strong></div>
+              <div class="base-pawns" id="base1"></div>
+            </div>
+            <div class="base-box">
+              <div><strong>BAZA Gracza2</strong></div>
+              <div class="base-pawns" id="base2"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <h2>Dziennik gry</h2>
+          <div id="log" class="log"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h2>Ustawienia nowej gry</h2>
+          <div class="setup-grid">
+            <label>
+              <div class="subtle">Gracz1</div>
+              <select id="player1Mode">
+                <option value="human">Człowiek</option>
+                <option value="ai">Komputer</option>
+              </select>
+            </label>
+            <label>
+              <div class="subtle">Poziom Gracza1</div>
+              <select id="player1Level">
+                <option value="easy">Łatwy</option>
+                <option value="medium" selected>Średni</option>
+                <option value="hard">Trudny</option>
+              </select>
+            </label>
+            <label>
+              <div class="subtle">Gracz2</div>
+              <select id="player2Mode">
+                <option value="human">Człowiek</option>
+                <option value="ai">Komputer</option>
+              </select>
+            </label>
+            <label>
+              <div class="subtle">Poziom Gracza2</div>
+              <select id="player2Level">
+                <option value="easy">Łatwy</option>
+                <option value="medium" selected>Średni</option>
+                <option value="hard">Trudny</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <button id="newGameBtn" class="primary">Nowa gra</button>
+            <button id="autoPlayBtn">Ruch komputera teraz</button>
+          </div>
+          <div class="footer-note">Możesz ustawić 0, 1 albo 2 graczy sterowanych przez komputer oraz poziom trudności osobno dla każdego z nich.</div>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <h2>Podpowiedź najlepszego ruchu</h2>
+          <div class="hint-box" id="hintBox">—</div>
+        </div>
+
+        <div class="panel" style="margin-top:16px;">
+          <h2>Sterowanie</h2>
+          <div class="row" style="margin-bottom:10px;">
+            <button id="rollBtn">Rzut kostkami</button>
+            <button id="confirmTripleBtn" class="primary" disabled>Zatwierdź wybraną trójkę</button>
+            <button id="skipPairBtn" class="warn" disabled>Pomiń bieżącą parę</button>
+            <button id="confirmMoveBtn" class="primary" disabled>Wykonaj ruch dla pary</button>
+            <button id="sendBaseBtn" class="danger" disabled>Przenieś pionek do BAZY</button>
+          </div>
+
+          <div class="section-title">Aktualny rzut</div>
+          <div id="diceLine" class="status-line">Brak rzutu.</div>
+
+          <div class="section-title">Dostępne trójki par</div>
+          <div id="triplesContainer" class="triples"></div>
+
+          <div class="section-title">Wartości dla aktywnego gracza</div>
+          <div id="legalTriplesLine" class="status-line">—</div>
+
+          <div class="section-title">Wybrana trójka</div>
+          <div id="selectedTripleLine" class="status-line">—</div>
+
+          <div class="section-title">Bieżąca para do rozegrania</div>
+          <div id="currentPairLine" class="status-line">—</div>
+
+          <div class="section-title">Dostępne ruchy dla bieżącej pary</div>
+          <div class="row" style="margin-bottom:8px;">
+            <select id="moveSelect" disabled style="min-width: 360px;"></select>
+          </div>
+
+          <div class="footer-note">
+            Założenie tej wersji: wartość pary oznacza numer trasy 2–12. Dla każdej pary można wstawić pionek z BAZY na START tej trasy albo przesunąć pionek już stojący na tej trasie o 1 pole. Wejście na META daje 1 punkt i odsyła pionek do BAZY.
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <script>
+    const ROUTES = {2:3,3:6,4:9,5:12,6:15,7:18,8:15,9:12,10:9,11:6,12:3};
+    const ROUTE_KEYS = Object.keys(ROUTES).map(Number);
+    const PLAYER_CONFIG = [
+      { key: 'Gracz1', pawnIds: ['PA', 'PB', 'PC'], cls: 'g1' },
+      { key: 'Gracz2', pawnIds: ['PD', 'PE', 'PF'], cls: 'g2' },
+    ];
+
+    const state = {
+      turnNr: 0,
+      phase: 'start',
+      players: [],
+      playerModes: ['human', 'human'],
+      playerLevels: ['medium', 'medium'],
+      currentRoll: null,
+      currentTriples: [],
+      selectedTriple: null,
+      currentPairIndex: 0,
+      usedPairsCount: 0,
+      activePlayerIndex: 0,
+      legalTriplesCache: [[], []],
+      bonusEligible: [false, false],
+      bonusChainPlayer: null,
+      lastTurn: false,
+      currentContext: null,
+      autoProcessing: false,
+      hint: null,
+    };
+
+    const els = {
+      turnBadge: document.getElementById('turnBadge'),
+      phaseBadge: document.getElementById('phaseBadge'),
+      activeBadge: document.getElementById('activeBadge'),
+      lastTurnBadge: document.getElementById('lastTurnBadge'),
+      modeBadge: document.getElementById('modeBadge'),
+      score1: document.getElementById('score1'),
+      score2: document.getElementById('score2'),
+      statusLine: document.getElementById('statusLine'),
+      hintBox: document.getElementById('hintBox'),
+      boardContainer: document.getElementById('boardContainer'),
+      base1: document.getElementById('base1'),
+      base2: document.getElementById('base2'),
+      diceLine: document.getElementById('diceLine'),
+      triplesContainer: document.getElementById('triplesContainer'),
+      legalTriplesLine: document.getElementById('legalTriplesLine'),
+      selectedTripleLine: document.getElementById('selectedTripleLine'),
+      currentPairLine: document.getElementById('currentPairLine'),
+      moveSelect: document.getElementById('moveSelect'),
+      log: document.getElementById('log'),
+      player1Mode: document.getElementById('player1Mode'),
+      player2Mode: document.getElementById('player2Mode'),
+      player1Level: document.getElementById('player1Level'),
+      player2Level: document.getElementById('player2Level'),
+      newGameBtn: document.getElementById('newGameBtn'),
+      autoPlayBtn: document.getElementById('autoPlayBtn'),
+      rollBtn: document.getElementById('rollBtn'),
+      confirmTripleBtn: document.getElementById('confirmTripleBtn'),
+      skipPairBtn: document.getElementById('skipPairBtn'),
+      confirmMoveBtn: document.getElementById('confirmMoveBtn'),
+      sendBaseBtn: document.getElementById('sendBaseBtn'),
+    };
+
+    function createPlayers() {
+      return PLAYER_CONFIG.map(cfg => ({
+        key: cfg.key,
+        cls: cfg.cls,
+        score: 0,
+        pawns: cfg.pawnIds.map(id => ({ id, route: 0, pos: 0, nextValue: 0, pointsThisTurn: 0 }))
+      }));
+    }
+
+    function clearLog() { els.log.textContent = ''; }
+    function log(text='') {
+      els.log.textContent += text + '\n';
+      els.log.scrollTop = els.log.scrollHeight;
+    }
+
+    function formatRoute(nr) { return nr ? String(nr).padStart(2, '0') : '0'; }
+    function formatNextValue(v) { return v === 0 ? '0' : Number(v).toFixed(2); }
+    function updateNextValue(pawn) {
+      if (!pawn.route || !pawn.pos) { pawn.nextValue = 0; return; }
+      pawn.nextValue = Number(((pawn.pos + 1) / ROUTES[pawn.route]).toFixed(2));
+    }
+    function formatPawn(pawn) {
+      return `${pawn.id}(${formatRoute(pawn.route)};${pawn.pos};${formatNextValue(pawn.nextValue)};${pawn.pointsThisTurn})`;
+    }
+    function formatStatusLine() {
+      const p1 = state.players[0].pawns.map(formatPawn).join(' ');
+      const p2 = state.players[1].pawns.map(formatPawn).join(' ');
+      return `Gracz1: ${p1} - Gracz2: ${p2}`;
+    }
+
+    function tripleKey(triple) { return triple.join('-'); }
+    function clonePlayers(players = state.players) {
+      return JSON.parse(JSON.stringify(players));
+    }
+
+    function rollSixDigits() {
+      return Array.from({ length: 6 }, () => Math.floor(Math.random() * 6) + 1);
+    }
+
+    function buildRollData() {
+      const digits = rollSixDigits();
+      const [A,B,C,D,E,F] = digits;
+      const triples = [
+        [A+B, C+D, E+F], [A+B, C+E, D+F], [A+B, C+F, D+E],
+        [A+C, B+D, E+F], [A+C, B+E, D+F], [A+C, B+F, D+E],
+        [A+D, B+C, E+F], [A+D, B+E, C+F], [A+D, B+F, C+E],
+        [A+E, B+C, D+F], [A+E, B+D, C+F], [A+E, B+F, C+D],
+        [A+F, B+C, D+E], [A+F, B+D, C+E], [A+F, B+E, C+D],
+      ];
+      const uniqueSorted = [];
+      const seen = new Set();
+      triples
+        .map(t => t.slice().sort((a,b) => a-b))
+        .sort((a,b) => a[0]-b[0] || a[1]-b[1] || a[2]-b[2])
+        .forEach(t => {
+          const key = t.join('-');
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueSorted.push(t);
+          }
+        });
+      return { digits, uniqueSorted };
+    }
+
+    function getMoveOptionsForPair(player, pairValue) {
+      const options = [];
+      player.pawns.forEach((pawn, pawnIndex) => {
+        if (pawn.route === 0) {
+          options.push({ type:'enter', pawnIndex, label:`${pawn.id}: z BAZY na START trasy ${formatRoute(pairValue)}` });
+        } else if (pawn.route === pairValue) {
+          const len = ROUTES[pairValue];
+          if (pawn.pos < len) {
+            options.push({ type:'advance', pawnIndex, label:`${pawn.id}: ruch na trasie ${formatRoute(pairValue)} z pola ${pawn.pos} na ${pawn.pos+1}` });
+          }
+        }
+      });
+      return options;
+    }
+
+    function playerHasAnyMoveForPair(player, pairValue) {
+      return getMoveOptionsForPair(player, pairValue).length > 0;
+    }
+
+    function getLegalTriplesForPlayer(player) {
+      return state.currentTriples.filter(triple => triple.some(v => playerHasAnyMoveForPair(player, v)));
+    }
+
+    function getPawnProgressScore(pawn) {
+      if (!pawn.route) return 0;
+      return pawn.pos / ROUTES[pawn.route];
+    }
+
+    function evaluateMoveOnSnapshot(snapshotPlayers, playerIndex, pairValue, move) {
+      const players = clonePlayers(snapshotPlayers);
+      const player = players[playerIndex];
+      const pawn = player.pawns[move.pawnIndex];
+      let score = 0;
+      if (move.type === 'enter') {
+        pawn.route = pairValue;
+        pawn.pos = 1;
+        score += 2 + (12 - Math.abs(7 - pairValue)) * 0.08;
+      } else {
+        pawn.pos += 1;
+        if (pawn.pos >= ROUTES[pairValue]) {
+          player.score += 1;
+          pawn.route = 0;
+          pawn.pos = 0;
+          score += 120;
+        } else {
+          score += 6 + getPawnProgressScore(pawn) * 14;
+        }
+      }
+      return { players, delta: score };
+    }
+
+    function evaluateTripleForPlayer(playerIndex, triple, playersSnapshot = state.players) {
+      let players = clonePlayers(playersSnapshot);
+      let total = 0;
+      const plan = [];
+      let used = 0;
+      triple.forEach(pairValue => {
+        const options = getMoveOptionsForPair(players[playerIndex], pairValue);
+        if (!options.length) {
+          plan.push({ pairValue, action:'skip', label:`Pomiń ${pairValue}` });
+          total -= 4;
+          return;
+        }
+        let best = null;
+        options.forEach(opt => {
+          const res = evaluateMoveOnSnapshot(players, playerIndex, pairValue, opt);
+          const tie = opt.type === 'advance' ? 0.2 : 0;
+          const candidate = { ...res, move: opt, score: res.delta + tie };
+          if (!best || candidate.score > best.score) best = candidate;
+        });
+        players = best.players;
+        used += 1;
+        total += best.score;
+        plan.push({ pairValue, action:'move', move: best.move, label: best.move.label });
+      });
+      if (used === 3) total += 35;
+      const scoreDiff = (players[playerIndex].score - players[1-playerIndex].score) * 12;
+      total += scoreDiff;
+      return { triple: triple.slice(), total, used, plan, finalPlayers: players };
+    }
+
+    function clonePawnValue(pawn) {
+      if (!pawn.route) return -1.5;
+      return pawn.pos * 2 + getPawnProgressScore(pawn) * 10 + (pawn.route === 7 ? 0.8 : 0);
+    }
+
+    function evaluateBoardState(players, playerIndex) {
+      const me = players[playerIndex];
+      const opp = players[1 - playerIndex];
+      const myPawnValue = me.pawns.reduce((sum, pawn) => sum + clonePawnValue(pawn), 0);
+      const oppPawnValue = opp.pawns.reduce((sum, pawn) => sum + clonePawnValue(pawn), 0);
+      return (me.score - opp.score) * 140 + (myPawnValue - oppPawnValue) + me.pawns.filter(p => p.route !== 0).length * 4;
+    }
+
+    function evaluateTripleExhaustive(playerIndex, triple, playersSnapshot = state.players) {
+      const rootPlayers = clonePlayers(playersSnapshot);
+      let best = null;
+      function dfs(pairIdx, players, plan, used) {
+        if (pairIdx >= triple.length) {
+          let total = evaluateBoardState(players, playerIndex) + (used === 3 ? 38 : 0) - (3 - used) * 3;
+          const result = { triple: triple.slice(), total, used, plan: plan.slice(), finalPlayers: clonePlayers(players) };
+          if (!best || result.total > best.total || (result.total === best.total && result.used > best.used)) best = result;
+          return;
+        }
+        const pairValue = triple[pairIdx];
+        const options = getMoveOptionsForPair(players[playerIndex], pairValue);
+        if (!options.length) {
+          plan.push({ pairValue, action:'skip', label:`Pomiń ${pairValue}` });
+          dfs(pairIdx + 1, clonePlayers(players), plan, used);
+          plan.pop();
+          return;
+        }
+        options.forEach(opt => {
+          const res = evaluateMoveOnSnapshot(players, playerIndex, pairValue, opt);
+          plan.push({ pairValue, action:'move', move: opt, label: opt.label });
+          dfs(pairIdx + 1, res.players, plan, used + 1);
+          plan.pop();
+        });
+        plan.push({ pairValue, action:'skip', label:`Pomiń ${pairValue}` });
+        dfs(pairIdx + 1, clonePlayers(players), plan, used);
+        plan.pop();
+      }
+      dfs(0, rootPlayers, [], 0);
+      return best;
+    }
+
+    function getEasyRecommendation(playerIndex) {
+      const legal = state.legalTriplesCache[playerIndex] || [];
+      if (!legal.length) return null;
+      let best = null;
+      legal.forEach(triple => {
+        const greedy = evaluateTripleForPlayer(playerIndex, triple);
+        let obvious = greedy.finalPlayers[playerIndex].score - state.players[playerIndex].score;
+        obvious = obvious * 100 + greedy.used * 10 - triple[0] * 0.01;
+        const candidate = { ...greedy, total: obvious };
+        if (!best || candidate.total > best.total) best = candidate;
+      });
+      return best;
+    }
+
+    function getMediumRecommendation(playerIndex) {
+      const legal = state.legalTriplesCache[playerIndex] || [];
+      if (!legal.length) return null;
+      const scored = legal.map(t => evaluateTripleForPlayer(playerIndex, t));
+      scored.sort((a,b) => b.total - a.total || b.used - a.used);
+      return scored[0];
+    }
+
+    function getHardRecommendation(playerIndex) {
+      const legal = state.legalTriplesCache[playerIndex] || [];
+      if (!legal.length) return null;
+      const scored = legal.map(t => evaluateTripleExhaustive(playerIndex, t));
+      scored.sort((a,b) => b.total - a.total || b.used - a.used);
+      return scored[0];
+    }
+
+    function getRecommendationByLevel(playerIndex, level = 'medium') {
+      if (level === 'easy') return getEasyRecommendation(playerIndex);
+      if (level === 'hard') return getHardRecommendation(playerIndex);
+      return getMediumRecommendation(playerIndex);
+    }
+
+    function getBestRecommendation(playerIndex) {
+      return getRecommendationByLevel(playerIndex, 'hard');
+    }
+
+    function renderHint() {
+      const idx = state.activePlayerIndex;
+      const player = state.players[idx];
+      const rec = getBestRecommendation(idx);
+      state.hint = rec;
+      if (!rec) {
+        els.hintBox.textContent = `${player.key}: brak legalnej trójki. Najrozsądniej będzie przygotować pionek do przeniesienia do BAZY.`;
+        return;
+      }
+      const lines = [
+        `${player.key}: sugerowana trójka (${rec.triple.join(', ')})`,
+        `Ocena pełna: ${rec.total.toFixed(1)}`,
+        `Plan: ${rec.plan.map(step => step.action === 'move' ? `${step.pairValue} → ${step.label}` : `${step.pairValue} → pomiń`).join(' | ')}`,
+      ];
+      if (state.selectedTriple && state.phase === 'resolve-selected-triple') {
+        const currentPair = state.selectedTriple[state.currentPairIndex];
+        const currentStep = rec.triple.join(',') === state.selectedTriple.join(',')
+          ? rec.plan[state.currentPairIndex]
+          : null;
+        if (currentStep) lines.push(`Bieżąca podpowiedź dla pary ${currentPair}: ${currentStep.action === 'move' ? currentStep.label : 'pomiń'}`);
+      }
+      els.hintBox.textContent = lines.join('\n');
+    }
+
+    function renderBoards() {
+      els.boardContainer.innerHTML = '';
+      ROUTE_KEYS.forEach(route => {
+        const len = ROUTES[route];
+        const row = document.createElement('div');
+        row.className = 'route-board';
+
+        const label = document.createElement('div');
+        label.className = 'route-label';
+        label.textContent = `Trasa ${String(route).padStart(2, '0')}`;
+        row.appendChild(label);
+
+        const start = document.createElement('div');
+        start.className = 'endpoint';
+        start.textContent = 'START';
+        row.appendChild(start);
+
+        const track = document.createElement('div');
+        track.className = 'track';
+        track.style.gridTemplateColumns = `repeat(${len}, minmax(24px, 1fr))`;
+
+        const shelfPos = Math.max(1, Math.floor((len * 2) / 3));
+        for (let pos = 1; pos <= len; pos++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          if (pos === 1) cell.classList.add('start-cell');
+          if (pos === len) cell.classList.add('meta-cell');
+          if (pos === shelfPos) cell.classList.add('mid');
+          const pawnsHere = [];
+          state.players.forEach((player, pIdx) => {
+            player.pawns.forEach(pawn => {
+              if (pawn.route === route && pawn.pos === pos) pawnsHere.push({ pawn, pIdx });
+            });
+          });
+          const stack = document.createElement('div');
+          stack.className = 'pawn-stack';
+          pawnsHere.forEach(({ pawn, pIdx }) => {
+            const token = document.createElement('span');
+            token.className = `pawn ${state.players[pIdx].cls}`;
+            token.textContent = pawn.id.replace('P', '');
+            token.title = `${state.players[pIdx].key} ${pawn.id}`;
+            stack.appendChild(token);
+          });
+          const index = document.createElement('div');
+          index.className = 'cell-index';
+          index.textContent = pos;
+          cell.appendChild(stack);
+          cell.appendChild(index);
+          track.appendChild(cell);
+        }
+        row.appendChild(track);
+
+        const meta = document.createElement('div');
+        meta.className = 'endpoint';
+        meta.textContent = 'META';
+        row.appendChild(meta);
+        els.boardContainer.appendChild(row);
+      });
+
+      [els.base1, els.base2].forEach(el => el.innerHTML = '');
+      state.players.forEach((player, idx) => {
+        const target = idx === 0 ? els.base1 : els.base2;
+        player.pawns.filter(p => p.route === 0).forEach(pawn => {
+          const token = document.createElement('span');
+          token.className = `pawn ${player.cls}`;
+          token.textContent = pawn.id.replace('P', '');
+          token.title = pawn.id;
+          target.appendChild(token);
+        });
+      });
+    }
+
+    function renderTriples() {
+      els.triplesContainer.innerHTML = '';
+      state.currentTriples.forEach(triple => {
+        const btn = document.createElement('button');
+        btn.className = 'triple-btn';
+        btn.textContent = `(${triple.join(', ')})`;
+        const isLegal = (state.legalTriplesCache[state.activePlayerIndex] || []).some(t => tripleKey(t) === tripleKey(triple));
+        if (!isLegal) btn.classList.add('disabled');
+        if (state.selectedTriple && tripleKey(state.selectedTriple) === tripleKey(triple)) btn.classList.add('selected');
+        btn.disabled = !isLegal || !['choose-turn0','choose-normal','choose-bonus'].includes(state.phase) || isComputerTurn();
+        btn.addEventListener('click', () => {
+          if (btn.disabled) return;
+          state.selectedTriple = triple.slice();
+          updateAll();
+        });
+        els.triplesContainer.appendChild(btn);
+      });
+    }
+
+    function renderMoveOptions() {
+      const player = state.players[state.activePlayerIndex];
+      const pairValue = state.selectedTriple ? state.selectedTriple[state.currentPairIndex] : null;
+      const options = pairValue ? getMoveOptionsForPair(player, pairValue) : [];
+      els.moveSelect.innerHTML = '';
+      if (!options.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Brak ruchów dla tej pary';
+        els.moveSelect.appendChild(option);
+        els.moveSelect.disabled = true;
+      } else {
+        options.forEach((opt, idx) => {
+          const option = document.createElement('option');
+          option.value = idx;
+          option.textContent = opt.label;
+          els.moveSelect.appendChild(option);
+        });
+        if (state.selectedTriple) {
+          const rec = getBestRecommendation(state.activePlayerIndex);
+          if (rec && tripleKey(rec.triple) === tripleKey(state.selectedTriple)) {
+            const step = rec.plan[state.currentPairIndex];
+            if (step && step.action === 'move') {
+              const recommendedIndex = options.findIndex(o => o.type === step.move.type && o.pawnIndex === step.move.pawnIndex);
+              if (recommendedIndex >= 0) els.moveSelect.value = String(recommendedIndex);
+            }
+          }
+        }
+        els.moveSelect.disabled = false;
+      }
+      const canActOnPair = !!options.length && state.phase === 'resolve-selected-triple' && !isComputerTurn();
+      els.confirmMoveBtn.disabled = !canActOnPair;
+      els.skipPairBtn.disabled = !(state.phase === 'resolve-selected-triple' && !isComputerTurn());
+    }
+
+    function updateAll() {
+      state.players.forEach(p => p.pawns.forEach(updateNextValue));
+      els.turnBadge.textContent = `Tura: ${state.turnNr}`;
+      els.phaseBadge.textContent = `Faza: ${state.phase}`;
+      els.activeBadge.textContent = `Aktywny: ${state.players[state.activePlayerIndex]?.key || '—'}`;
+      els.lastTurnBadge.textContent = `Ostatnia tura: ${state.lastTurn ? 'tak' : 'nie'}`;
+      const lvl1 = state.playerModes[0] === 'ai' ? ` (${state.playerLevels[0]})` : '';
+      const lvl2 = state.playerModes[1] === 'ai' ? ` (${state.playerLevels[1]})` : '';
+      els.modeBadge.textContent = `Tryb: G1 ${state.playerModes[0] === 'ai' ? 'komputer' : 'człowiek'}${lvl1} | G2 ${state.playerModes[1] === 'ai' ? 'komputer' : 'człowiek'}${lvl2}`;
+      els.score1.textContent = state.players[0]?.score ?? 0;
+      els.score2.textContent = state.players[1]?.score ?? 0;
+      els.statusLine.textContent = formatStatusLine();
+      renderBoards();
+
+      if (state.currentRoll) {
+        els.diceLine.textContent = `Wylosowano cyfry: ${state.currentRoll.digits.join(', ')}\nDostępne trójki par: ${state.currentTriples.map(t => `(${t.join(', ')})`).join(' ')}`;
+      } else {
+        els.diceLine.textContent = 'Brak rzutu.';
+      }
+
+      const legal = state.legalTriplesCache[state.activePlayerIndex] || [];
+      els.legalTriplesLine.textContent = legal.length
+        ? `${state.players[state.activePlayerIndex].key}: ${legal.map(t => `(${t.join(', ')})`).join(' ')}`
+        : `${state.players[state.activePlayerIndex].key}: brak dostępnych trójek`;
+
+      els.selectedTripleLine.textContent = state.selectedTriple ? `Wybrana trójka: (${state.selectedTriple.join(', ')})` : '—';
+      if (state.selectedTriple && state.phase === 'resolve-selected-triple') {
+        els.currentPairLine.textContent = `Para ${state.currentPairIndex + 1} z 3: ${state.selectedTriple[state.currentPairIndex]}`;
+      } else {
+        els.currentPairLine.textContent = '—';
+      }
+
+      renderTriples();
+      renderMoveOptions();
+      renderHint();
+
+      const choosePhase = ['choose-turn0','choose-normal','choose-bonus'].includes(state.phase);
+      const noLegalTriples = legal.length === 0;
+      els.rollBtn.disabled = !['await-roll-turn0','await-roll-normal','await-roll-bonus'].includes(state.phase) || isComputerTurn();
+      els.confirmTripleBtn.disabled = !(state.selectedTriple && choosePhase && !isComputerTurn());
+      els.sendBaseBtn.disabled = !(state.phase === 'choose-normal' && noLegalTriples && !isComputerTurn());
+      els.autoPlayBtn.disabled = state.phase === 'game-over';
+    }
+
+    function isComputerTurn() {
+      return state.playerModes[state.activePlayerIndex] === 'ai';
+    }
+
+    function resetGame() {
+      state.turnNr = 0;
+      state.phase = 'start';
+      state.players = createPlayers();
+      state.playerModes = [els.player1Mode.value, els.player2Mode.value];
+      state.playerLevels = [els.player1Level.value, els.player2Level.value];
+      state.currentRoll = null;
+      state.currentTriples = [];
+      state.selectedTriple = null;
+      state.currentPairIndex = 0;
+      state.usedPairsCount = 0;
+      state.activePlayerIndex = 0;
+      state.legalTriplesCache = [[], []];
+      state.bonusEligible = [false, false];
+      state.bonusChainPlayer = null;
+      state.lastTurn = false;
+      state.currentContext = null;
+      state.autoProcessing = false;
+      clearLog();
+      log('Początek gry – Tura nr 0');
+      log(`Tryby graczy: Gracz1=${state.playerModes[0] === 'ai' ? 'komputer' : 'człowiek'}${state.playerModes[0] === 'ai' ? ` (${state.playerLevels[0]})` : ''}, Gracz2=${state.playerModes[1] === 'ai' ? 'komputer' : 'człowiek'}${state.playerModes[1] === 'ai' ? ` (${state.playerLevels[1]})` : ''}`);
+      log('Wszystkie pionki znajdują się w BAZA.');
+      prepareTurn0Roll();
+    }
+
+    function prepareTurn0Roll() {
+      state.currentContext = 'turn0';
+      state.phase = 'await-roll-turn0';
+      state.activePlayerIndex = 0;
+      state.selectedTriple = null;
+      state.currentRoll = null;
+      state.currentTriples = [];
+      state.legalTriplesCache = [[], []];
+      updateAll();
+      scheduleComputerStep();
+    }
+
+    function startNewNormalTurn() {
+      state.turnNr += 1;
+      state.players.forEach(p => p.pawns.forEach(pawn => pawn.pointsThisTurn = 0));
+      state.bonusEligible = [false, false];
+      state.bonusChainPlayer = null;
+      state.currentContext = 'normal';
+      state.phase = 'await-roll-normal';
+      state.activePlayerIndex = 0;
+      state.selectedTriple = null;
+      state.currentRoll = null;
+      state.currentTriples = [];
+      state.legalTriplesCache = [[], []];
+      log(`\nTura nr ${state.turnNr}`);
+      log(`Status pionków: ${formatStatusLine()}`);
+      updateAll();
+      scheduleComputerStep();
+    }
+
+    function startBonusTurn(playerIndex) {
+      state.bonusChainPlayer = playerIndex;
+      state.currentContext = 'bonus';
+      state.phase = 'await-roll-bonus';
+      state.activePlayerIndex = playerIndex;
+      state.selectedTriple = null;
+      state.currentRoll = null;
+      state.currentTriples = [];
+      state.legalTriplesCache = [[], []];
+      log(`\n${state.players[playerIndex].key} otrzymuje BONUS i wykonuje dodatkowy rzut.`);
+      updateAll();
+      scheduleComputerStep();
+    }
+
+    function doRoll() {
+      state.currentRoll = buildRollData();
+      state.currentTriples = state.currentRoll.uniqueSorted.map(t => t.slice());
+      state.legalTriplesCache[0] = getLegalTriplesForPlayer(state.players[0]).map(t => t.slice());
+      state.legalTriplesCache[1] = getLegalTriplesForPlayer(state.players[1]).map(t => t.slice());
+      log(`Wylosowano cyfry: ${state.currentRoll.digits.join(', ')}`);
+      log(`Dostępne trójki par: ${state.currentTriples.map(t => `(${t.join(', ')})`).join(' ')}`);
+
+      if (state.currentContext === 'turn0') {
+        state.phase = 'choose-turn0';
+        state.activePlayerIndex = 0;
+        log(`Wartości dla Gracza1: ${state.legalTriplesCache[0].map(t => `(${t.join(', ')})`).join(' ') || 'brak'}`);
+        log('Gracz1 wybiera trójkę startową.');
+      } else if (state.currentContext === 'normal') {
+        state.phase = 'choose-normal';
+        state.activePlayerIndex = 0;
+        log(`Wartości dla Gracza1: ${state.legalTriplesCache[0].map(t => `(${t.join(', ')})`).join(' ') || 'brak'}`);
+        log(`Wartości dla Gracza2: ${state.legalTriplesCache[1].map(t => `(${t.join(', ')})`).join(' ') || 'brak'}`);
+        log('Gracz1 rozpoczyna wybór ruchu.');
+      } else if (state.currentContext === 'bonus') {
+        state.phase = 'choose-bonus';
+        log(`Wartości dla ${state.players[state.activePlayerIndex].key}: ${state.legalTriplesCache[state.activePlayerIndex].map(t => `(${t.join(', ')})`).join(' ') || 'brak'}`);
+        if (state.legalTriplesCache[state.activePlayerIndex].length === 0) {
+          log(`${state.players[state.activePlayerIndex].key} nie może wykonać ruchu w BONUSIE. Tura się kończy.`);
+          finishPlayerChoiceWithoutMove();
+          return;
+        }
+      }
+      updateAll();
+      scheduleComputerStep();
+    }
+
+    function confirmTriple() {
+      if (!state.selectedTriple) return;
+      state.phase = 'resolve-selected-triple';
+      state.currentPairIndex = 0;
+      state.usedPairsCount = 0;
+      log(`${state.players[state.activePlayerIndex].key} wybrał trójkę (${state.selectedTriple.join(', ')}).`);
+      updateAll();
+      scheduleComputerStep();
+    }
+
+    function applyMoveForCurrentPair(selectedIndex = null) {
+      const player = state.players[state.activePlayerIndex];
+      const pairValue = state.selectedTriple[state.currentPairIndex];
+      const options = getMoveOptionsForPair(player, pairValue);
+      if (!options.length) return;
+      const idx = selectedIndex ?? Number(els.moveSelect.value || 0);
+      const move = options[idx] || options[0];
+      const pawn = player.pawns[move.pawnIndex];
+
+      if (move.type === 'enter') {
+        pawn.route = pairValue;
+        pawn.pos = 1;
+        pawn.pointsThisTurn += 1;
+        updateNextValue(pawn);
+        log(`${player.key}: ${pawn.id} wchodzi z BAZY na START trasy ${formatRoute(pairValue)}.`);
+      } else {
+        pawn.pos += 1;
+        pawn.pointsThisTurn += 1;
+        const len = ROUTES[pairValue];
+        if (pawn.pos >= len) {
+          log(`${player.key}: ${pawn.id} osiąga META na trasie ${formatRoute(pairValue)} i zdobywa 1 punkt.`);
+          player.score += 1;
+          pawn.route = 0;
+          pawn.pos = 0;
+          updateNextValue(pawn);
+          checkIfLastTurnTriggered();
+        } else {
+          updateNextValue(pawn);
+          log(`${player.key}: ${pawn.id} przesuwa się na trasie ${formatRoute(pairValue)} na pole ${pawn.pos}.`);
+        }
+      }
+      state.usedPairsCount += 1;
+      advanceSelectedTripleFlow();
+    }
+
+    function skipCurrentPair() {
+      const pairValue = state.selectedTriple[state.currentPairIndex];
+      log(`${state.players[state.activePlayerIndex].key}: para ${pairValue} została pominięta.`);
+      advanceSelectedTripleFlow();
+    }
+
+    function advanceSelectedTripleFlow() {
+      state.currentPairIndex += 1;
+      if (state.currentPairIndex >= 3) {
+        finishSelectedTriple();
+        return;
+      }
+      const nextPair = state.selectedTriple[state.currentPairIndex];
+      if (!getMoveOptionsForPair(state.players[state.activePlayerIndex], nextPair).length) {
+        log(`Dla kolejnej pary (${nextPair}) nie ma ruchu.`);
+      }
+      updateAll();
+      scheduleComputerStep();
+    }
+
+    function finishSelectedTriple() {
+      const playerIndex = state.activePlayerIndex;
+      state.bonusEligible[playerIndex] = state.usedPairsCount === 3;
+      if (state.bonusEligible[playerIndex]) {
+        log(`${state.players[playerIndex].key} wykorzystał wszystkie 3 pary i ma prawo do BONUSU.`);
+      } else {
+        log(`${state.players[playerIndex].key} nie wykorzystał wszystkich 3 par — bez BONUSU.`);
+      }
+      finishPlayerChoiceWithoutMove(false);
+    }
+
+    function finishPlayerChoiceWithoutMove() {
+      if (state.currentContext === 'turn0') {
+        if (state.activePlayerIndex === 0) {
+          state.activePlayerIndex = 1;
+          state.selectedTriple = null;
+          state.phase = 'choose-turn0';
+          log(`Wartości dla Gracza2: ${state.legalTriplesCache[1].map(t => `(${t.join(', ')})`).join(' ') || 'brak'}`);
+          log('Gracz2 wybiera trójkę startową.');
+          updateAll();
+          scheduleComputerStep();
+          return;
+        }
+        log('Zakończono turę 0');
+        log(`Status pionków: ${formatStatusLine()}`);
+        if (checkEndGameAfterTurn()) return;
+        startNewNormalTurn();
+        return;
+      }
+
+      if (state.currentContext === 'bonus') {
+        state.selectedTriple = null;
+        state.phase = 'bonus-ended';
+        updateAll();
+        if (checkEndGameAfterTurn()) return;
+        startNewNormalTurn();
+        return;
+      }
+
+      if (state.currentContext === 'normal') {
+        if (state.activePlayerIndex === 0) {
+          state.activePlayerIndex = 1;
+          state.selectedTriple = null;
+          state.phase = 'choose-normal';
+          log('Gracz2 rozpoczyna wybór ruchu.');
+          if (state.legalTriplesCache[1].length === 0) {
+            log('Gracz2 nie ma żadnej dostępnej trójki i musi przenieść jeden pionek do BAZY.');
+          }
+          updateAll();
+          scheduleComputerStep();
+          return;
+        }
+        resolveTurnAfterBothPlayers();
+      }
+    }
+
+    function resolveTurnAfterBothPlayers() {
+      log(`Koniec tury ${state.turnNr}. Status pionków: ${formatStatusLine()}`);
+      if (checkEndGameAfterTurn()) return;
+      const [b1, b2] = state.bonusEligible;
+      if (b1 && !b2) startBonusTurn(0);
+      else if (!b1 && b2) startBonusTurn(1);
+      else startNewNormalTurn();
+    }
+
+    function checkIfLastTurnTriggered() {
+      if (!state.lastTurn && (state.players[0].score >= 3 || state.players[1].score >= 3)) {
+        state.lastTurn = true;
+        log('Osiągnięto próg 3 punktów. Rozpoczęła się Ostatnia Tura.');
+      }
+      updateAll();
+    }
+
+    function checkEndGameAfterTurn() {
+      const p1 = state.players[0].score;
+      const p2 = state.players[1].score;
+      if (state.lastTurn && (p1 >= 3 || p2 >= 3)) {
+        state.phase = 'game-over';
+        let msg = 'Gra zakończyła się remisem.';
+        if (p1 >= 3 && p2 >= 3) msg = 'Gra zakończyła się remisem.';
+        else if (p1 >= 3) msg = 'Gra zakończyła się zwycięstwem Gracza1.';
+        else msg = 'Gra zakończyła się zwycięstwem Gracza2.';
+        log(msg);
+        alert(msg);
+        updateAll();
+        return true;
+      }
+      return false;
+    }
+
+    function choosePawnToBaseIndex(playerIndex) {
+      const player = state.players[playerIndex];
+      let bestIdx = 0;
+      let bestValue = Infinity;
+      player.pawns.forEach((pawn, idx) => {
+        const value = pawn.route === 0 ? -100 : pawn.pos + ROUTES[pawn.route] * 0.01;
+        if (value < bestValue) {
+          bestValue = value;
+          bestIdx = idx;
+        }
+      });
+      return bestIdx;
+    }
+
+    function sendPawnToBase(forceIndex = null) {
+      const player = state.players[state.activePlayerIndex];
+      let idx = forceIndex;
+      if (idx == null) {
+        const labels = player.pawns.map((p, i) => `${i + 1}:${p.id}${p.route ? ` trasa ${formatRoute(p.route)} pole ${p.pos}` : ' BAZA'}`).join(' | ');
+        const answer = prompt(`${player.key} nie ma dostępnej trójki.\nWpisz numer pionka do przeniesienia do BAZY:\n${labels}`, '1');
+        if (answer === null) return;
+        idx = Number(answer) - 1;
+      }
+      if (Number.isNaN(idx) || idx < 0 || idx >= player.pawns.length) {
+        alert('Nieprawidłowy numer pionka.');
+        return;
+      }
+      const pawn = player.pawns[idx];
+      pawn.route = 0;
+      pawn.pos = 0;
+      updateNextValue(pawn);
+      log(`${player.key}: ${pawn.id} został przeniesiony do BAZY.`);
+      finishPlayerChoiceWithoutMove();
+    }
+
+    function doComputerStep() {
+      if (state.phase === 'game-over') return;
+      const playerIndex = state.activePlayerIndex;
+      const isAI = state.playerModes[playerIndex] === 'ai';
+      if (!isAI && !state.autoProcessing) return;
+
+      if (['await-roll-turn0','await-roll-normal','await-roll-bonus'].includes(state.phase)) {
+        doRoll();
+        return;
+      }
+
+      if (['choose-turn0','choose-normal','choose-bonus'].includes(state.phase)) {
+        const legal = state.legalTriplesCache[playerIndex] || [];
+        if (!legal.length) {
+          if (state.phase === 'choose-normal') {
+            const idx = choosePawnToBaseIndex(playerIndex);
+            sendPawnToBase(idx);
+          } else if (state.phase === 'choose-bonus') {
+            finishPlayerChoiceWithoutMove();
+          }
+          return;
+        }
+        const level = state.playerLevels[playerIndex] || 'medium';
+        const rec = getRecommendationByLevel(playerIndex, level);
+        state.selectedTriple = (rec ? rec.triple : legal[0]).slice();
+        log(`${state.players[playerIndex].key} (${state.playerModes[playerIndex] === 'ai' ? `komputer ${level}` : 'auto'}): wybiera trójkę (${state.selectedTriple.join(', ')}).`);
+        confirmTriple();
+        return;
+      }
+
+      if (state.phase === 'resolve-selected-triple') {
+        const level = state.playerLevels[playerIndex] || 'medium';
+        const rec = getRecommendationByLevel(playerIndex, level);
+        const pairValue = state.selectedTriple[state.currentPairIndex];
+        const options = getMoveOptionsForPair(state.players[playerIndex], pairValue);
+        if (!options.length) {
+          skipCurrentPair();
+          return;
+        }
+        let selectedIndex = 0;
+        if (level === 'easy') {
+          const metaIdx = options.findIndex(o => o.type === 'advance' && state.players[playerIndex].pawns[o.pawnIndex].pos + 1 >= ROUTES[pairValue]);
+          if (metaIdx >= 0) selectedIndex = metaIdx;
+          else {
+            const advIdx = options.findIndex(o => o.type === 'advance');
+            if (advIdx >= 0) selectedIndex = advIdx;
+          }
+        }
+        if (rec && tripleKey(rec.triple) === tripleKey(state.selectedTriple)) {
+          const step = rec.plan[state.currentPairIndex];
+          if (step && step.action === 'move') {
+            const idx = options.findIndex(o => o.type === step.move.type && o.pawnIndex === step.move.pawnIndex);
+            if (idx >= 0) selectedIndex = idx;
+          } else if (step && step.action === 'skip') {
+            skipCurrentPair();
+            return;
+          }
+        }
+        applyMoveForCurrentPair(selectedIndex);
+      }
+    }
+
+    function scheduleComputerStep() {
+      updateAll();
+      if (state.phase === 'game-over') return;
+      if (isComputerTurn()) {
+        setTimeout(doComputerStep, 250);
+      }
+    }
+
+    els.newGameBtn.addEventListener('click', resetGame);
+    els.autoPlayBtn.addEventListener('click', () => {
+      state.autoProcessing = true;
+      doComputerStep();
+      setTimeout(() => { state.autoProcessing = false; }, 50);
+    });
+    els.rollBtn.addEventListener('click', doRoll);
+    els.confirmTripleBtn.addEventListener('click', confirmTriple);
+    els.confirmMoveBtn.addEventListener('click', () => applyMoveForCurrentPair());
+    els.skipPairBtn.addEventListener('click', skipCurrentPair);
+    els.sendBaseBtn.addEventListener('click', () => sendPawnToBase());
+
+    resetGame();
+  </script>
+</body>
+</html>
